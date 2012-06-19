@@ -9,19 +9,26 @@
 
 (defn- graph-branch? [_] true)
 
-(defn graph-children? [graph-map]
+(defn- graph-children? [graph-map]
   (fn [[_ uri]]
     (if-let [entry (find graph-map uri)]
       (val entry)
-      []))
-  )
+      [])))
+
+(defn- graph-make-node [_ _ _]
+  ;; We can't modify a graph using zipper because zipper makes the assumption
+  ;; that the parents of a node can't change when you modify a child node. Graphs
+  ;; can be cyclical (unlike vec, seq, or xml), which means it is possible to edit
+  ;; higher up a traversal, and so the changes wouldn't be reflected if the user
+  ;; traversed back up the tree.
+  throw (RuntimeException. "Can't modify graph using zipper."))
 
 ;; graph-map :: {subject -> [property object]}
 (defn graph-zipper [graph-map root-subject]
   (zip/zipper
    graph-branch?
    (graph-children? graph-map)
-   nil ;;This is the make-node function, not entirely sure what this does...
+   graph-make-node
    [nil root-subject]))
 
 ;; statements :: [{:subject :property :object}]
