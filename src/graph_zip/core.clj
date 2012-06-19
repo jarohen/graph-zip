@@ -1,8 +1,13 @@
 (ns graph-zip.core
   (:require [clojure.zip :as zip]))
 
+(defn- add-statement-to-map [graph-map {:keys [subject property object]}]
+  (assoc graph-map subject
+          (if-let [existing-props (get graph-map subject)]
+            (cons [property object] existing-props)
+            [[property object]])))
 
-(defn graph-branch? [_] true)
+(defn- graph-branch? [_] true)
 
 (defn graph-children? [graph-map]
   (fn [[_ uri]]
@@ -21,13 +26,7 @@
 
 ;; statements :: [{:subject :property :object}]
 (defn build-graph-map [statements]
-  (reduce
-   #(if-let [{:keys [subject property object]} %2]
-             (assoc %1 subject
-                    (if-let [existing-props (find %1 subject)]
-                      (cons (val existing-props) [[property object]])
-                      [property object]))
-             %1)
+  (reduce add-statement-to-map
       (hash-map)
       statements))
 
