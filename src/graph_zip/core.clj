@@ -37,6 +37,15 @@
       (hash-map)
       statements))
 
+(defn prop [loc prop]
+  (let [[node graph] (zip/node loc)]
+    (map second (filter #(= prop (first %)) (val (find graph node))))))
+
+(defn prop1 [loc prop-name]
+  (let [result (prop loc prop-name)]
+    (if (= (count result) 1)
+      (first result))))
+
 (defn prop=
   [prop expected]
   (fn [loc]
