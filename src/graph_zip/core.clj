@@ -13,7 +13,7 @@
 (defn- graph-branch? [_] true)
 
 (defn- graph-children [[node graph]]
-  (map second (val (find graph node))))
+  (map #(vector (second %) graph) (val (find graph node))))
 
 (defn- graph-make-node [_ _ _]
   ;; We can't modify a graph using zipper because zipper makes the assumption
@@ -39,22 +39,35 @@
 
 (defn prop=
   [prop expected]
-  (fn [[node graph]]
-    (some #(and
-            (= (first %) prop)
-            (= (second %) expected))
-          (val (find graph node)))))
+  (fn [loc]
+    (let [[node graph] (zip/node loc)]
+      (some #(= [prop expected] %) (val (find graph node))))))
+
+(defn- child-nodes-by-pred [node graph pred]
+  (map second (filter #(= (first %) pred) (val (find graph node)))))
+
+(defn- loc-to-node [loc]
+  (first (zip/node loc)))
+
+(defn- navigate-relationship [loc pred]
+  (let [[node graph] (zip/node loc)
+        valid-child-nodes (child-nodes-by-pred node graph pred)
+        child-locs (zf/children loc)
+        valid-child-locs (filter (fn [child-loc]
+                                   (let [child-node (loc-to-node child-loc)]
+                                     (some #(= child-node %) valid-child-nodes)))
+                                 child-locs)]
+    valid-child-locs))
+
+(defn graph-node [loc] (first (zip/node loc)))
 
 (defn graph->
   [loc & preds]
-  (println (format "Applying graph->%n loc = %s%n preds=%s" loc preds))
   (zf/mapcat-chain loc preds
                    #(cond
                      (vector? %) (fn [loc] (and (seq (apply graph-> loc %)) (list loc)))
-                     (keyword? %) (fn [loc] (let [[node graph] (zip/node loc)]
-                                              (map (fn [n] [(second n) graph])
-                                                   (filter (fn [c] (= (first c) %))
-                                                           (val (find graph node)))))))))
+                     (or (keyword? %) (string? %)) (fn [loc] (navigate-relationship loc %)))))
+
 
 ;; ----------- TESTS
 
@@ -69,6 +82,16 @@
 
 
 (let [loc (-> (graph-zipper (build-graph-map [{:subject "patbox" :property :instance :object "patbox/instance"}
+                                              {:subject "patbox" :property :instance :object "patbox/instance2"}
+                                              {:subject "patbox/instance" :property :userid :object "mis"}
+                                              {:subject "patbox/instance" :property "label" :object "1"}
+                                              {:subject "patbox/instance2" :property "label" :object "2"}
+                                              {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
+                                              {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}])
+                            "patbox"))]
+  (map graph-node (graph-> loc :instance [(prop= "label" "1")] "cmdb:jvm" "cmdb:maxMem")))
+
+(let [loc (-> (graph-zipper (build-graph-map [{:subject "patbox" :property :instance :object "patbox/instance"}
                                                   {:subject "patbox" :property :instance :object "patbox/instance2"}
                                                   {:subject "patbox/instance" :property :userid :object "mis"}
                                                   {:subject "patbox/instance" :property "label" :object "1"}
@@ -76,7 +99,7 @@
                                                   {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
                                                    {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}])
                             "patbox"))]
-  (graph-> loc :instance [(prop= "label" "1")])) ;; -> "1024m"
+  (map graph-node (graph-> loc :instance (prop= "label" "2"))))
 
 (let [loc (graph-zipper (build-graph-map [{:subject "patbox" :property :instance :object "patbox/instance"}
                                           {:subject "patbox" :property :instance :object "patbox/instance2"}
@@ -86,6 +109,4 @@
                                           {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
                                           {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}])
                         "patbox")]
-  (graph-> loc :instance))
-
-((prop= "label" "2") ["patbox/instance2" my-map])
+  (map graph-node (graph-> loc :instance)))
