@@ -16,6 +16,8 @@
   (map #(vector (second %) graph) (val (find graph node))))
 
 (defn- graph-make-node [_ _ _]
+  ;; TODO It probably is possible, I'm just a clojure newbie...
+  
   ;; We can't modify a graph using zipper because zipper makes the assumption
   ;; that the parents of a node can't change when you modify a child node. Graphs
   ;; can be cyclical (unlike vec, seq, or xml), which means it is possible to edit
