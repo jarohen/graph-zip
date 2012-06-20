@@ -36,7 +36,7 @@
 ;; statements :: [{:subject :property :object}]
 (defn build-graph
   ([statements]
-     (build-graph-map nil statements))
+     (build-graph nil statements))
   ([graph statements]
      (reduce add-statement-to-map graph statements)))
 
@@ -59,7 +59,15 @@
   (let [preds (get graph object)]
     (get preds pred)))
 
-(defn graph-object [loc] (:object (zip/node loc)))
+(defn graph-object [loc]
+  (if (nil? loc)
+    nil
+    (:object (zip/node loc))))
+
+(defn graph [loc]
+  (if (nil? loc)
+    nil
+    (:graph (zip/node loc))))
 
 (defn- navigate-relationship [loc pred]
   (let [{:keys [object graph]} (zip/node loc)
@@ -75,8 +83,12 @@
   [loc & preds]
   (zf/mapcat-chain loc preds
                    #(cond
-                     (vector? %) (fn [loc] (and (seq (apply graph-> loc %)) (list loc)))
-                     (or (keyword? %) (string? %)) (fn [loc] (navigate-relationship loc %)))))
+                     (vector? %)
+                     (fn [loc] (and (seq (apply graph-> loc %)) (list loc)))
+
+                     (or (keyword? %)
+                         (string? %))
+                     (fn [loc] (navigate-relationship loc %)))))
 
 (defn graph1->
   [loc & preds]
@@ -86,14 +98,13 @@
 
 ;; ----------- TESTS
 
-
 (def my-map (build-graph [{:subject "patbox" :property :instance :object "patbox/instance"}
-                              {:subject "patbox" :property :instance :object "patbox/instance2"}
-                              {:subject "patbox/instance" :property :userid :object "mis"}
-                              {:subject "patbox/instance" :property "label" :object "1"}
-                              {:subject "patbox/instance2" :property "label" :object "2"}
-                              {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
-                              {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
+                          {:subject "patbox" :property :instance :object "patbox/instance2"}
+                          {:subject "patbox/instance" :property :userid :object "mis"}
+                          {:subject "patbox/instance" :property "label" :object "1"}
+                          {:subject "patbox/instance2" :property "label" :object "2"}
+                          {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
+                          {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
 
 (def patbox-loc (graph-zipper my-map "patbox"))
 
