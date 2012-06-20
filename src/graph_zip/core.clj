@@ -6,12 +6,9 @@
 
 (defn- add-statement-to-map [graph-map {:keys [subject property object]}]
   (assoc graph-map subject
-         (if-let [existing-props (get graph-map subject)]
-           (assoc existing-props property
-                  (if-let [existing-vals (get existing-props property)]
-                    (cons object existing-vals)
-                    [object]))
-           {property [object]})))
+         (let [props (get graph-map subject)]
+           (assoc props property
+                  (conj (get props property) object)))))
 
 (defn- graph-branch? [_] true)
 
@@ -38,9 +35,7 @@
 
 ;; statements :: [{:subject :property :object}]
 (defn build-graph-map [statements]
-  (reduce add-statement-to-map
-      (hash-map)
-      statements))
+  (reduce add-statement-to-map nil statements))
 
 (defn prop [loc prop]
   (let [{:keys [object graph]} (zip/node loc)
@@ -58,7 +53,7 @@
     (some #(= expected %) (prop loc prop-name))))
 
 (defn- child-objects-by-pred [object graph pred]
-  (if-let [preds (get graph object)]
+  (let [preds (get graph object)]
     (get preds pred)))
 
 (defn graph-object [loc] (:object (zip/node loc)))
