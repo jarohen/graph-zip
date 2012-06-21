@@ -4,16 +4,19 @@
             [clojure.xml :as xml]
             [clojure.data.zip :as zf]))
 
-(defn- add-statement-to-map [graph-map {:keys [subject property object]}]
-  (assoc graph-map subject
-         (let [props (get graph-map subject)]
-           (assoc props property
-                  (conj (get props property) object)))))
+(defprotocol Graph
+  (props-map [_ node])
+  (prop-values [_ node prop]))
+
+(extend-protocol Graph
+  nil
+  (props-map [_ _] nil)
+  (prop-values [_ _ _] nil))
 
 (defn- graph-branch? [_] true)
 
-(defn- graph-children [{:keys [object graph]}]
-  (map #(hash-map :object % :graph graph) (mapcat val (get graph object))))
+(defn- graph-children [{:keys [node graph]}]
+  (map #(hash-map :node % :graph graph) (mapcat val (props-map graph node))))
 
 (defn- graph-make-node [_ _ _]
   ;; TODO It probably is possible, I'm just a clojure newbie...
@@ -25,57 +28,53 @@
   ;; traversed back up the tree.
   (throw (RuntimeException. "Can't modify graph using zipper.")))
 
-;; graph-map :: {subject -> [property object]}
-(defn graph-zipper [graph-map root-object]
+;; graph-map :: ^Graph
+(defn graph-zipper [graph root-node]
   (zip/zipper
    graph-branch?
    graph-children
    graph-make-node
-   {:object root-object :graph graph-map}))
+   {:node root-node :graph graph}))
 
-;; statements :: [{:subject :property :object}]
-(defn build-graph
-  ([statements]
-     (build-graph nil statements))
-  ([graph statements]
-     (reduce add-statement-to-map graph statements)))
+(defn props [loc]
+  (let [{:keys [node graph]} (zip/node loc)]
+    (props-map graph node)))
 
-(defn prop [loc prop]
-  (let [{:keys [object graph]} (zip/node loc)
-        prop-map (get graph object)]
-    (get prop-map prop)))
+(defn prop [loc prop-name]
+  (let [{:keys [node graph]} (zip/node loc)]
+    (prop-values graph node prop-name)))
 
-(defn prop1 [loc prop-name]
-  (let [result (prop loc prop-name)]
-    (if (= (count result) 1)
-      (first result))))
+
 
 (defn prop=
   [prop-name expected]
   (fn [loc]
-    (some #(= expected %) (prop loc prop-name))))
+    (let [{:keys [graph node]} (zip/node loc)]
+      (some #(= expected %) (prop-values graph node prop-name)))))
 
-(defn- child-objects-by-pred [object graph pred]
-  (let [preds (get graph object)]
-    (get preds pred)))
+(defn prop1 [loc prop-name]
+  (let [result (prop loc prop-name)]
+    (if (= 1 (count result))
+      (first result)
+      nil)))
 
-(defn graph-object [loc]
+(defn loc-node [loc]
   (if (nil? loc)
     nil
-    (:object (zip/node loc))))
+    (:node (zip/node loc))))
 
-(defn graph [loc]
+(defn loc-graph [loc]
   (if (nil? loc)
     nil
     (:graph (zip/node loc))))
 
-(defn- navigate-relationship [loc pred]
-  (let [{:keys [object graph]} (zip/node loc)
-        valid-child-objects (child-objects-by-pred object graph pred)
+(defn navigate-relationship [loc rel]
+  (let [{:keys [node graph]} (zip/node loc)
+        valid-child-nodes (prop-values graph node rel)
         child-locs (zf/children loc)
         valid-child-locs (filter (fn [child-loc]
-                                   (let [child-object (graph-object child-loc)]
-                                     (some #(= child-object %) valid-child-objects)))
+                                   (let [child-node (loc-node child-loc)]
+                                     (some #(= child-node %) valid-child-nodes)))
                                  child-locs)]
     valid-child-locs))
 
@@ -86,8 +85,9 @@
                      (vector? %)
                      (fn [loc] (and (seq (apply graph-> loc %)) (list loc)))
 
-                     (or (keyword? %)
-                         (string? %))
+                     (fn? %) nil
+                     
+                     :otherwise
                      (fn [loc] (navigate-relationship loc %)))))
 
 (defn graph1->
@@ -95,28 +95,3 @@
   (let [result (apply graph-> loc preds)]
     (if (= (count result) 1)
       (first result))))
-
-;; ----------- TESTS
-
-(def my-map (build-graph [{:subject "patbox" :property :instance :object "patbox/instance"}
-                          {:subject "patbox" :property :instance :object "patbox/instance2"}
-                          {:subject "patbox/instance" :property :userid :object "mis"}
-                          {:subject "patbox/instance" :property "label" :object "1"}
-                          {:subject "patbox/instance2" :property "label" :object "2"}
-                          {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
-                          {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
-
-(def patbox-loc (graph-zipper my-map "patbox"))
-
-(graph-object (graph1-> patbox-loc
-                        :instance
-                        [(prop= "label" "1")]
-                        "cmdb:jvm"
-                        "cmdb:maxMem")) ;; -> "1024m"
-
-(graph-object (graph1-> patbox-loc
-                        :instance
-                        (prop= "label" "2"))) ;; -> "patbox/instance2"
-
-(map graph-object (graph-> patbox-loc
-                           :instance)) ;; -> ("patbox/instance2" "patbox/instance")
