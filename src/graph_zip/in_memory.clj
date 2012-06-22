@@ -2,7 +2,19 @@
    (:use [graph-zip.core])
    (:require [clojure.zip :as zip]
              [clojure.xml :as xml]
+             [clojure.contrib.datalog.database :as datalog]
              [clojure.data.zip :as zf]))
+
+(defn- graph-map-to-datalog-statements [graph-map]
+  (letfn [(property-entry-to-statements [subject property-entry]
+            (let [property (key property-entry)]
+              (map #(vector :statement :subject subject :property property :object %) (val property-entry))))
+          
+          (subject-entry-to-statements [subject-entry]
+            (let [subject (key subject-entry)]
+              (mapcat #(property-entry-to-statements subject %) (val subject-entry))))]
+    
+    (mapcat subject-entry-to-statements graph-map)))
 
 (defrecord InMemoryGraph [graph-map]
     Graph
@@ -11,7 +23,10 @@
     (prop-values [graph node prop]
       (let [props (props-map graph node)]
         (get props prop)))
-    (to-datalog-db [graph _] nil)) ;;todo
+    (to-datalog-db [graph _]
+      (let [db (datalog/make-database
+                (relation :statement [:subject :property :object]))]
+        (apply datalog/add-tuples db (graph-map-to-datalog-statements (:graph-map graph))))))
 
 (defn- add-statement-to-map [graph-map {:keys [subject property object]}]
   (assoc graph-map subject
