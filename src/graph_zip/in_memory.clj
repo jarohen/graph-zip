@@ -61,7 +61,7 @@
 
 (loc-node (graph1-> patbox-loc
                         :instance
-                        (prop= "label" "1"))) ;; -> "patbox/instance2"
+                        (prop= "label" "2"))) ;; -> "patbox/instance2"
 
 (map loc-node (graph-> patbox-loc
                        :instance)) ;; -> ("patbox/instance2" "patbox/instance")
