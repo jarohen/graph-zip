@@ -4,20 +4,19 @@
 
 (defprotocol Graph
   (props-map [_ node])
-  (prop-values [_ node prop])
-  (to-datalog-db [_ node]))
+  (prop-values [_ node prop]))
+
 
 (extend-protocol Graph
   nil
   (props-map [_ _] nil)
-  (prop-values [_ _ _] nil)
-  (to-datalog-db [_ _] nil))
+  (prop-values [_ _ _] nil))
 
 (defn- graph-children [{:keys [node graph]}]
   (map #(hash-map :node % :graph graph) (mapcat val (props-map graph node))))
 
 (defn- graph-make-node [_ _ _]
-  ;; TODO It probably is possible, I'm just a clojure newbie...
+  ;; TODO It probably is possible
   
   ;; We can't modify a graph using zipper because zipper makes the assumption
   ;; that the parents of a node can't change when you modify a child node. Graphs
@@ -27,7 +26,7 @@
   (throw (RuntimeException. "Can't modify graph using zipper.")))
 
 ;; graph-map :: ^Graph
-(defn graph-zipper [graph root-node]
+(defn graph-zip [graph root-node]
   (zip/zipper
    (constantly true) ;;graph-branch?
    graph-children
@@ -66,7 +65,7 @@
 
 (defn go-to [node]
   (fn [loc]
-    (vector (graph-zipper (loc-graph loc) node))))
+    (vector (graph-zip (loc-graph loc) node))))
 
 (defn navigate-relationship [loc rel]
   (let [{:keys [node graph]} (zip/node loc)
@@ -95,6 +94,3 @@
   (let [result (apply graph-> loc preds)]
     (if (= (count result) 1)
       (first result))))
-
-(defn loc-to-datalog-db [loc]
-  (to-datalog-db (loc-graph loc) (loc-node loc)))
