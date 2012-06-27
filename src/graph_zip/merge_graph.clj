@@ -9,6 +9,9 @@
   (prop-values [graphs node prop]
     (flatten (map #(prop-values % node prop) (:graphs graphs)))))
 
+(defn make-merge-graph [& graphs]
+  (MergeGraph. graphs))
+
 ;; TESTS -----------------------
 
 (def additional-map (build-in-memory-graph [{:subject "patbox" :property :instance :object "patbox/instance3"}
