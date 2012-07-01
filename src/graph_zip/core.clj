@@ -3,77 +3,65 @@
             [clojure.data.zip :as zip-filter]))
 
 (defprotocol Graph
-  (props-map [_ node])
-  (prop-values [_ node prop]))
+  (props-map [_ node direction])
+  (prop-values [_ node prop direction]))
 
 (extend-protocol Graph
   nil
-  (props-map [_ _] nil)
-  (prop-values [_ _ _] nil))
-
-(defn- graph-children [{:keys [node graph]}]
-  (map #(hash-map :node % :graph graph) (mapcat val (props-map graph node))))
-
-(defn- graph-make-node [_ _ _]
-  ;; TODO It might be possible
-  
-  ;; We can't modify a graph using zipper because zipper makes the assumption
-  ;; that the parents of a node can't change when you modify a child node. Graphs
-  ;; can be cyclical (unlike vec, seq, or xml), which means it is possible to edit
-  ;; higher up a traversal, and so the changes wouldn't be reflected if the user
-  ;; traversed back up the tree.
-  (throw (RuntimeException. "Can't modify graph using zipper.")))
+  (props-map [_ _ _] nil)
+  (prop-values [_ _ _ _] nil))
 
 ;; graph :: ^Graph
 (defn graph-zipper [graph root-node]
-  (zip/zipper
-   (constantly true) ;;graph-branch?
-   graph-children
-   graph-make-node
-   {:node root-node :graph graph}))
+  {:graph graph :node root-node})
 
 (defn zipper-node [zipper]
-  (if-let [node (zip/node zipper)]
-    (:node node)))
+  (:node zipper))
 
 (defn zipper-graph [zipper]
-  (if-let [node (zip/node zipper)]
-    (:graph node)))
+  (:graph zipper))
 
-(defn props [zipper]
-  (let [{:keys [node graph]} (zip/node zipper)]
-    (or (props-map graph node)
-        {})))
+(defn props
+  ([zipper] (props zipper :out))
+  ([zipper direction]
+     (let [{:keys [node graph]} zipper]
+       (or (props-map graph node direction)
+           {}))))
 
-(defn prop [zipper prop-name]
-  (let [{:keys [node graph]} (zip/node zipper)]
-    (prop-values graph node prop-name)))
+(defn prop
+  ([zipper prop-name] (prop zipper prop-name :out))
+  ([zipper prop-name direction] 
+     (let [{:keys [node graph]} zipper]
+       (prop-values graph node prop-name direction))))
 
 (defn prop=
-  [prop-name expected]
-  (fn [zipper]
-    (let [{:keys [graph node]} (zip/node zipper)]
-      (some #(= expected %) (prop-values graph node prop-name)))))
+  ([prop-name expected] (prop= prop-name expected :out))
+  ([prop-name expected direction]
+      (fn [zipper]
+        (let [{:keys [graph node]} zipper]
+          (some #(= expected %) (prop-values graph node prop-name direction))))))
 
-(defn prop1 [zipper prop-name]
-  (let [result (prop zipper prop-name)]
-    (if (= 1 (count result))
-      (first result)
-      nil)))
+(defn prop1
+  ([zipper prop-name] (prop1 zipper prop-name :out))
+  ([zipper prop-name direction]
+      (let [result (prop zipper prop-name direction)]
+        (if (= 1 (count result))
+          (first result)
+          nil))))
 
 (defn go-to [node]
   (fn [zipper]
-    (vector (graph-zipper (zipper-graph zipper) node))))
+    (graph-zipper (zipper-graph zipper) node)))
 
-(defn navigate-relationship [zipper rel]
-  (let [{:keys [node graph]} (zip/node zipper)
-        valid-child-nodes (prop-values graph node rel)
-        child-zippers (zip-filter/children zipper)
-        valid-child-zippers (filter (fn [child-zipper]
-                                   (let [child-node (zipper-node child-zipper)]
-                                     (some #(= child-node %) valid-child-nodes)))
-                                 child-zippers)]
-    valid-child-zippers))
+(defn navigate-relationship [zipper rel direction]
+  (let [{:keys [node graph]} zipper
+        valid-child-nodes (prop-values graph node rel direction)]
+    (for [node valid-child-nodes]
+      (graph-zipper graph node))))
+
+(defn incoming [prop-name]
+  (fn [zipper]
+    (navigate-relationship zipper prop-name :in)))
 
 (defn zip->
   [zipper & preds]
@@ -85,7 +73,7 @@
                              (fn? %) nil
                              
                              :otherwise
-                             (fn [zipper] (navigate-relationship zipper %)))))
+                             (fn [zipper] (navigate-relationship zipper % :out)))))
 
 (defn zip1->
   [zipper & preds]

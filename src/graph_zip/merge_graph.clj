@@ -4,12 +4,12 @@
 
 (defrecord MergeGraph [graphs]
   Graph
-  (props-map [this node]
-    (let [maps (map #(props-map % node) (:graphs this))
+  (props-map [this node direction]
+    (let [maps (map #(props-map % node direction) (:graphs this))
           non-empty-maps (filter #(not (empty? %)) maps)]
       (apply merge-with (comp flatten conj) non-empty-maps)))
-  (prop-values [this node prop]
-    (flatten (filter #(not (empty? %)) (map #(prop-values % node prop) (:graphs this))))))
+  (prop-values [this node prop direction]
+    (flatten (filter #(not (empty? %)) (map #(prop-values % node prop direction) (:graphs this))))))
 
 (defn make-merge-graph [& graphs]
   (MergeGraph. graphs))

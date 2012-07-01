@@ -4,28 +4,33 @@
              [clojure.xml :as xml]
              [clojure.data.zip :as zf]))
 
-(defrecord InMemoryGraph [graph]
+(defrecord InMemoryGraph [graphs]
     Graph
-    (props-map [this node]
-      (or (get (:graph this) node)
+    (props-map [this node direction]
+      (or (get-in this [:graphs direction node])
           {}))
-    (prop-values [this node prop]
-      (let [props (props-map this node)]
+    (prop-values [this node prop direction]
+      (let [props (props-map this node direction)]
         (or (get props prop)
             []))))
 
-(defn- add-statement-to-map [graph-map {:keys [subject property object]}]
-  (assoc graph-map subject
-         (let [props (get graph-map subject)]
+(defn- add-statement-to-map [graph-map from property to]
+  (assoc graph-map from
+         (let [props (get graph-map from)]
            (assoc props property
-                  (conj (get props property) object)))))
+                  (conj (get props property) to)))))
+
+(defn- add-statement-to-maps [{:keys [in out]} {:keys [subject property object]}]
+  {:in (add-statement-to-map in object property subject)
+   :out (add-statement-to-map out subject property object)})
 
 ;; statements :: [{:subject :property :object}]
 (defn build-in-memory-graph
   ([statements]
      (build-in-memory-graph nil statements))
   ([graph statements]
-     (InMemoryGraph. (reduce add-statement-to-map (:graph-map graph) statements))))
+     
+     (InMemoryGraph. (reduce add-statement-to-maps (:graphs graph) statements))))
 
 ;; ----------- TESTS
 
@@ -34,16 +39,16 @@
                                     {:subject "prod-host/instance" :property :userid :object "my-user"}
                                     {:subject "prod-host/instance" :property "label" :object "1"}
                                     {:subject "prod-host/instance2" :property "label" :object "2"}
-                                    {:subject "prod-host/instance" :property "cmdb:jvm" :object "prod-host/instance/jvm"}
-                                    {:subject "prod-host/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
+                                    {:subject "prod-host/instance" :property "jvm" :object "prod-host/instance/jvm"}
+                                    {:subject "prod-host/instance/jvm" :property "maxMem" :object "1024m"}]))
 
 (def prod-host-zipper (graph-zipper my-map "prod-host"))
 
 (zipper-node (zip1-> prod-host-zipper
                      :instance
                      [(prop= "label" "1")]
-                     "cmdb:jvm"
-                     "cmdb:maxMem")) ;; -> "1024m"
+                     "jvm"
+                     "maxMem")) ;; -> "1024m"
 
 (zipper-node (zip1-> prod-host-zipper
                      :instance
@@ -51,4 +56,8 @@
 
 (map zipper-node (zip-> prod-host-zipper
                         :instance)) ;; -> ("prod-host/instance2" "prod-host/instance")
+
+(zipper-node (zip1-> (graph-zipper my-map "prod-host/instance")
+                     (incoming :instance))) ;; -> "prod-host"
+
 
