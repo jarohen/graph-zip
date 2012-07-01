@@ -78,14 +78,14 @@
 (defn zip->
   [zipper & preds]
   (zip-filter/mapcat-chain zipper preds
-                   #(cond
-                     (vector? %)
-                     (fn [zipper] (and (seq (apply zip-> zipper %)) (list zipper)))
-
-                     (fn? %) nil
-                     
-                     :otherwise
-                     (fn [zipper] (navigate-relationship zipper %)))))
+                           #(cond
+                             (vector? %)
+                             (fn [zipper] (and (seq (apply zip-> zipper %)) (list zipper)))
+                             
+                             (fn? %) nil
+                             
+                             :otherwise
+                             (fn [zipper] (navigate-relationship zipper %)))))
 
 (defn zip1->
   [zipper & preds]
