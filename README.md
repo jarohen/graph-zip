@@ -66,6 +66,8 @@ Relations don't have to be keywords
 Graph-Zip can merge graphs from many sources. Here we are just merging
 two in-memory graphs:
 
+    (use 'graph-zip.merge-graph :only [make-merge-graph])
+
     (def additional-map 
      (build-in-memory-graph 
       [{:subject "prod-host" :property :instance :object "prod-host/instance3"}
