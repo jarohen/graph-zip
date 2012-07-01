@@ -99,7 +99,7 @@ The merge behaves as you'd expect:
 
 ### Traversing back up the graph
 
-Since v0.3, can go back up the graph as well, with ```(incoming :property)```:
+Since v0.3, it is possible to traverse back up the graph as well, with ```(incoming :property)```:
 
 Find all the instances where the userid is ```my-user```:
 
@@ -111,6 +111,13 @@ Find all the instances where the userid is ```my-user```:
     ;; -> ("prod-host/instance3" 
            "prod-host/instance")
                             
+
+# Licence
+
+Copyright (C) 2012 James Henderson, Malcolm Sparks
+
+Distributed under the Eclipse Public License, the same as Clojure.
+
 
     
 
