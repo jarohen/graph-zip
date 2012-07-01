@@ -100,6 +100,7 @@ The merge behaves as you'd expect:
 Since v0.3, can go back up the graph as well, with ```(incoming :property)```:
 
 Find all the instances where the userid is ```my-user```:
+
 ```go-to``` moves the zipper to the given node.
 
     (map zipper-node (zip-> merged-zipper
