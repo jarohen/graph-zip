@@ -3,6 +3,10 @@
 Graph zip is a zipper library for Clojure that can navigate graph
 structures, with a similar syntax to xml-zip.
 
+## Lein dependency:
+
+    [graph-zip "0.3.1"]
+
 ## Usage
 You can use graph zip like this:
 
