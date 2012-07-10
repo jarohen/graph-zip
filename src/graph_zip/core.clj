@@ -34,12 +34,14 @@
      (let [{:keys [node graph]} zipper]
        (prop-values graph node prop-name direction))))
 
+(defn prop-is
+  ([prop-name pred] (prop-is prop-name pred :out))
+  ([prop-name pred direction] (fn [loc]
+                                (some #(pred %) (prop loc prop-name direction)))))
+
 (defn prop=
   ([prop-name expected] (prop= prop-name expected :out))
-  ([prop-name expected direction]
-      (fn [zipper]
-        (let [{:keys [graph node]} zipper]
-          (some #(= expected %) (prop-values graph node prop-name direction))))))
+  ([prop-name expected direction] (prop-is prop-name (partial = expected))))
 
 (defn prop1
   ([zipper prop-name] (prop1 zipper prop-name :out))
