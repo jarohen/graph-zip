@@ -25,14 +25,14 @@
   (let [{:keys [node graph]} loc]
     (or (props-map graph node :out) {})))
 
-(defn prop-is
+(defn prop-is [prop-name pred]
   (fn [loc]
     (some #(pred %)
           (let [{:keys [node graph]} loc]
             (prop-values graph node prop-name :out)))))
 
 (defn prop= [prop-name expected]
-  (prop= prop-name expected :out))
+  (prop-is prop-name (partial = expected)))
 
 (defn go-to [node]
   (fn [loc]
