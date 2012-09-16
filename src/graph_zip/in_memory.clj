@@ -2,7 +2,6 @@
    (:use [graph-zip.core])
    (:require [clojure.zip :as zip]
              [clojure.xml :as xml]
-             [clojure.contrib.datalog.database :as datalog]
              [clojure.data.zip :as zf]))
 
 (defn- graph-map-to-datalog-statements [graph-map]
@@ -22,11 +21,7 @@
       (get (:graph-map graph) node))
     (prop-values [graph node prop]
       (let [props (props-map graph node)]
-        (get props prop)))
-    (to-datalog-db [graph _]
-      (let [db (datalog/make-database
-                (relation :statement [:subject :property :object]))]
-        (apply datalog/add-tuples db (graph-map-to-datalog-statements (:graph-map graph))))))
+        (get props prop))))
 
 (defn- add-statement-to-map [graph-map {:keys [subject property object]}]
   (assoc graph-map subject
@@ -51,7 +46,7 @@
                           {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
                           {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
 
-(def patbox-loc (graph-zipper my-map "patbox"))
+(def patbox-loc (graph-zip my-map "patbox"))
 
 (loc-node (graph1-> patbox-loc
                         :instance

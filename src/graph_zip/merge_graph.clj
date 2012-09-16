@@ -15,7 +15,7 @@
                                             {:subject "patbox" :property "cmdb:hostname" :object "DBLONWS33999"}
                                             {:subject "patbox/instance3" :property "label" :object "3"}]))
 
-(def merged-loc (graph-zipper (MergeGraph. [my-map additional-map]) "patbox"))
+(def merged-loc (graph-zip (MergeGraph. [my-map additional-map]) "patbox"))
 
 (loc-node (graph1-> merged-loc
                         :instance
