@@ -26,7 +26,7 @@
   (throw (RuntimeException. "Can't modify graph using zipper.")))
 
 ;; graph-map :: ^Graph
-(defn graph-zip [graph root-node]
+(defn graph-zipper [graph root-node]
   (zip/zipper
    (constantly true) ;;graph-branch?
    graph-children
@@ -65,7 +65,7 @@
 
 (defn go-to [node]
   (fn [loc]
-    (vector (graph-zip (loc-graph loc) node))))
+    (vector (graph-zipper (loc-graph loc) node))))
 
 (defn navigate-relationship [loc rel]
   (let [{:keys [node graph]} (zip/node loc)
@@ -77,20 +77,20 @@
                                  child-locs)]
     valid-child-locs))
 
-(defn graph->
+(defn zip->
   [loc & preds]
   (zip-filter/mapcat-chain loc preds
                    #(cond
                      (vector? %)
-                     (fn [loc] (and (seq (apply graph-> loc %)) (list loc)))
+                     (fn [loc] (and (seq (apply zip-> loc %)) (list loc)))
 
                      (fn? %) nil
                      
                      :otherwise
                      (fn [loc] (navigate-relationship loc %)))))
 
-(defn graph1->
+(defn zip1->
   [loc & preds]
-  (let [result (apply graph-> loc preds)]
+  (let [result (apply zip-> loc preds)]
     (if (= (count result) 1)
       (first result))))

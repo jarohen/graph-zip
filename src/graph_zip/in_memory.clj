@@ -4,23 +4,12 @@
              [clojure.xml :as xml]
              [clojure.data.zip :as zf]))
 
-(defn- graph-map-to-datalog-statements [graph-map]
-  (letfn [(property-entry-to-statements [subject property-entry]
-            (let [property (key property-entry)]
-              (map #(vector :statement :subject subject :property property :object %) (val property-entry))))
-          
-          (subject-entry-to-statements [subject-entry]
-            (let [subject (key subject-entry)]
-              (mapcat #(property-entry-to-statements subject %) (val subject-entry))))]
-    
-    (mapcat subject-entry-to-statements graph-map)))
-
-(defrecord InMemoryGraph [graph-map]
+(defrecord InMemoryGraph [graph]
     Graph
-    (props-map [graph node]
-      (get (:graph-map graph) node))
-    (prop-values [graph node prop]
-      (let [props (props-map graph node)]
+    (props-map [this node]
+      (get (:graph this) node))
+    (prop-values [this node prop]
+      (let [props (props-map this node)]
         (get props prop))))
 
 (defn- add-statement-to-map [graph-map {:keys [subject property object]}]
@@ -46,18 +35,18 @@
                           {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
                           {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
 
-(def patbox-loc (graph-zip my-map "patbox"))
+(def patbox-loc (graph-zipper my-map "patbox"))
 
-(loc-node (graph1-> patbox-loc
-                        :instance
-                        [(prop= "label" "1")]
-                        "cmdb:jvm"
-                        "cmdb:maxMem")) ;; -> "1024m"
+(loc-node (zip1-> patbox-loc
+                  :instance
+                  [(prop= "label" "1")]
+                  "cmdb:jvm"
+                  "cmdb:maxMem")) ;; -> "1024m"
 
-(loc-node (graph1-> patbox-loc
-                        :instance
-                        (prop= "label" "2"))) ;; -> "patbox/instance2"
+(loc-node (zip1-> patbox-loc
+                  :instance
+                  (prop= "label" "2"))) ;; -> "patbox/instance2"
 
-(map loc-node (graph-> patbox-loc
-                       :instance)) ;; -> ("patbox/instance2" "patbox/instance")
+(map loc-node (zip-> patbox-loc
+                     :instance)) ;; -> ("patbox/instance2" "patbox/instance")
 
