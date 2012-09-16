@@ -34,8 +34,11 @@
    {:object root-object :graph graph-map}))
 
 ;; statements :: [{:subject :property :object}]
-(defn build-graph-map [statements]
-  (reduce add-statement-to-map nil statements))
+(defn build-graph-map
+  ([statements]
+     (build-graph-map nil statements))
+  ([graph statements]
+     (reduce add-statement-to-map graph statements)))
 
 (defn prop [loc prop]
   (let [{:keys [object graph]} (zip/node loc)
