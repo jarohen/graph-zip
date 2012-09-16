@@ -1,19 +1,17 @@
 (ns graph-zip.core
-  (:use [clojure.data.zip.xml :only [xml->]])
   (:require [clojure.zip :as zip]
-            [clojure.xml :as xml]
-            [clojure.data.zip :as zf]))
+            [clojure.data.zip :as zip-filter]))
 
 (defprotocol Graph
   (props-map [_ node])
-  (prop-values [_ node prop]))
+  (prop-values [_ node prop])
+  (to-datalog-db [_ node]))
 
 (extend-protocol Graph
   nil
   (props-map [_ _] nil)
-  (prop-values [_ _ _] nil))
-
-(defn- graph-branch? [_] true)
+  (prop-values [_ _ _] nil)
+  (to-datalog-db [_ _] nil))
 
 (defn- graph-children [{:keys [node graph]}]
   (map #(hash-map :node % :graph graph) (mapcat val (props-map graph node))))
@@ -31,10 +29,20 @@
 ;; graph-map :: ^Graph
 (defn graph-zipper [graph root-node]
   (zip/zipper
-   graph-branch?
+   (constantly true) ;;graph-branch?
    graph-children
    graph-make-node
    {:node root-node :graph graph}))
+
+(defn loc-node [loc]
+  (if (nil? loc)
+    nil
+    (:node (zip/node loc))))
+
+(defn loc-graph [loc]
+  (if (nil? loc)
+    nil
+    (:graph (zip/node loc))))
 
 (defn props [loc]
   (let [{:keys [node graph]} (zip/node loc)]
@@ -43,8 +51,6 @@
 (defn prop [loc prop-name]
   (let [{:keys [node graph]} (zip/node loc)]
     (prop-values graph node prop-name)))
-
-
 
 (defn prop=
   [prop-name expected]
@@ -58,20 +64,14 @@
       (first result)
       nil)))
 
-(defn loc-node [loc]
-  (if (nil? loc)
-    nil
-    (:node (zip/node loc))))
-
-(defn loc-graph [loc]
-  (if (nil? loc)
-    nil
-    (:graph (zip/node loc))))
+(defn go-to [node]
+  (fn [loc]
+    (vector (graph-zipper (loc-graph loc) node))))
 
 (defn navigate-relationship [loc rel]
   (let [{:keys [node graph]} (zip/node loc)
         valid-child-nodes (prop-values graph node rel)
-        child-locs (zf/children loc)
+        child-locs (zip-filter/children loc)
         valid-child-locs (filter (fn [child-loc]
                                    (let [child-node (loc-node child-loc)]
                                      (some #(= child-node %) valid-child-nodes)))
@@ -80,7 +80,7 @@
 
 (defn graph->
   [loc & preds]
-  (zf/mapcat-chain loc preds
+  (zip-filter/mapcat-chain loc preds
                    #(cond
                      (vector? %)
                      (fn [loc] (and (seq (apply graph-> loc %)) (list loc)))
@@ -95,3 +95,6 @@
   (let [result (apply graph-> loc preds)]
     (if (= (count result) 1)
       (first result))))
+
+(defn loc-to-datalog-db [loc]
+  (to-datalog-db (loc-graph loc) (loc-node loc)))

@@ -1,8 +1,8 @@
 (ns graph-zip.in-memory
-  (:use graph-zip.core)
-  (:require [clojure.zip :as zip]
-            [clojure.xml :as xml]
-            [clojure.data.zip :as zf]))
+   (:use [graph-zip.core])
+   (:require [clojure.zip :as zip]
+             [clojure.xml :as xml]
+             [clojure.data.zip :as zf]))
 
 (defrecord InMemoryGraph [graph-map]
     Graph
@@ -10,7 +10,8 @@
       (get (:graph-map graph) node))
     (prop-values [graph node prop]
       (let [props (props-map graph node)]
-        (get props prop))))
+        (get props prop)))
+    (to-datalog-db [graph _] nil)) ;;todo
 
 (defn- add-statement-to-map [graph-map {:keys [subject property object]}]
   (assoc graph-map subject
@@ -23,7 +24,7 @@
   ([statements]
      (build-in-memory-graph nil statements))
   ([graph statements]
-     (InMemoryGraph. (reduce add-statement-to-map graph statements))))
+     (InMemoryGraph. (reduce add-statement-to-map (:graph-map graph) statements))))
 
 ;; ----------- TESTS
 
@@ -49,3 +50,4 @@
 
 (map loc-node (graph-> patbox-loc
                        :instance)) ;; -> ("patbox/instance2" "patbox/instance")
+
