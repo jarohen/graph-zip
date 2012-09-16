@@ -44,28 +44,32 @@
 
 (def prod-host-zipper (graph-zip my-map "prod-host"))
 
+;; Simple test
+(zip-> prod-host-zipper
+       :instance
+       node) ;; -> ("prod-host/instance2" "prod-host/instance")
+
+;; Filter by a property
+(zip1-> prod-host-zipper
+        :instance
+        (prop= "label" "2")
+        node) ;; -> "prod-host/instance2"
+
+;; Keep navigating down the tree
 (zip1-> prod-host-zipper
         :instance
         [(prop= "label" "1")]
         "jvm"
         "maxMem"
-        zipper-node)
+        node) ;; -> "1024m"
 
-(node (zip1-> prod-host-zipper
-              :instance
-              [(prop= "label" "1")]
-              "jvm"
-              "maxMem")) ;; -> "1024m"
+;; Test for 'incoming'
+(zip1-> (graph-zip my-map "prod-host/instance")
+        (incoming :instance)
+        node) ;; -> "prod-host"
 
-(node (zip1-> prod-host-zipper
-              :instance
-              (prop= "label" "2"))) ;; -> "prod-host/instance2"
-
-(zip-> prod-host-zipper
-       :instance
-       node) ;; -> ("prod-host/instance2" "prod-host/instance")
-
-(zipper-node (zip1-> (graph-zipper my-map "prod-host/instance")
-                     (incoming :instance))) ;; -> "prod-host"
-
-
+;; Test for 'props'
+(zip1-> prod-host-zipper
+        :instance
+        (prop= "label" "1")
+        props) ;; -> {"jvm" ("prod-host/instance/jvm"), "label" ("1"), :userid ("my-user")}

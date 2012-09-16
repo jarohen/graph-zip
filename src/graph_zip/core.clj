@@ -21,41 +21,24 @@
 (defn graph [loc]
   (:graph loc))
 
-(defn props
-  ([loc] (props loc :out))
-  ([loc direction]
-     (let [{:keys [node graph]} loc]
-       (or (props-map graph node direction)
-           {}))))
-
-(defn prop
-  ([loc prop-name] (prop loc prop-name :out))
-  ([loc prop-name direction] 
-     (let [{:keys [node graph]} loc]
-       (prop-values graph node prop-name direction))))
+(defn props [loc]
+  (let [{:keys [node graph]} loc]
+    (or (props-map graph node :out) {})))
 
 (defn prop-is
-  ([prop-name pred] (prop-is prop-name pred :out))
-  ([prop-name pred direction] (fn [loc]
-                                (some #(pred %) (prop loc prop-name direction)))))
+  (fn [loc]
+    (some #(pred %)
+          (let [{:keys [node graph]} loc]
+            (prop-values graph node prop-name :out)))))
 
-(defn prop=
-  ([prop-name expected] (prop= prop-name expected :out))
-  ([prop-name expected direction] (prop-is prop-name (partial = expected))))
-
-(defn prop1
-  ([loc prop-name] (prop1 loc prop-name :out))
-  ([loc prop-name direction]
-     (let [result (prop loc prop-name direction)]
-       (if (= 1 (count result))
-         (first result)
-         nil))))
+(defn prop= [prop-name expected]
+  (prop= prop-name expected :out))
 
 (defn go-to [node]
   (fn [loc]
     (graph-zip (graph loc) node)))
 
-(defn navigate-relationship [loc rel direction]
+(defn- navigate-relationship [loc rel direction]
   (let [{:keys [node graph]} loc
         valid-child-nodes (prop-values graph node rel direction)]
     (for [node valid-child-nodes]
