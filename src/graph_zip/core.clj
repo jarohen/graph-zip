@@ -34,7 +34,7 @@
    {:object root-object :graph graph-map}))
 
 ;; statements :: [{:subject :property :object}]
-(defn build-graph-map
+(defn build-graph
   ([statements]
      (build-graph-map nil statements))
   ([graph statements]
@@ -87,7 +87,7 @@
 ;; ----------- TESTS
 
 
-(def my-map (build-graph-map [{:subject "patbox" :property :instance :object "patbox/instance"}
+(def my-map (build-graph [{:subject "patbox" :property :instance :object "patbox/instance"}
                               {:subject "patbox" :property :instance :object "patbox/instance2"}
                               {:subject "patbox/instance" :property :userid :object "mis"}
                               {:subject "patbox/instance" :property "label" :object "1"}
