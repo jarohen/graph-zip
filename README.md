@@ -43,8 +43,9 @@ zippers.
 Mapping zipper-node over the zippers returns just the nodes that are
 related to "prod-host" by ```:instance```
 
-    (map zipper-node (zip-> prod-host-zipper
-                            :instance)) ;; -> ("prod-host/instance2" "prod-host/instance")
+    (zip-> prod-host-zipper
+           :instance
+           node) ;; -> ("prod-host/instance2" "prod-host/instance")
 
 In a similar vein to xml-zip, you can prune the graph by using a
 ```prop=``` predicate.
@@ -52,17 +53,33 @@ In a similar vein to xml-zip, you can prune the graph by using a
 If you are only expecting one result, you can use the ```zip1->``` function
 instead.
 
-    (zipper-node (zip1-> prod-host-zipper
-                         :instance
-                         (prop= "label" "2"))) ;; -> "prod-host/instance2"
+    (zip1-> prod-host-zipper
+            :instance
+            (prop= "label" "2")
+            node) ;; -> "prod-host/instance2"
+
 
 Relations don't have to be keywords
 
-    (zipper-node (zip1-> prod-host-zipper
-                         :instance
-                         [(prop= "label" "1")]
-                         "cmdb:jvm"
-                         "cmdb:maxMem")) ;; -> "1024m"
+    (zip1-> prod-host-zipper
+            :instance
+            [(prop= "label" "1")]
+            "jvm"
+            "maxMem"
+            node) ;; -> "1024m"
+
+Navigate an incoming relationship by using ```incoming```
+
+    (zip1-> (graph-zip my-map "prod-host/instance")
+            (incoming :instance)
+            node) ;; -> "prod-host"
+            
+Get the properties map of a node using ```props```
+
+    (zip1-> prod-host-zipper
+            :instance
+            (prop= "label" "1")
+            props) ;; -> {"jvm" ("prod-host/instance/jvm"), "label" ("1"), :userid ("my-user")}
 
 
 ### Merging graphs
