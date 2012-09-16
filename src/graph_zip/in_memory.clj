@@ -35,8 +35,6 @@
                           {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
                           {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
 
-(identity my-map)
-
 (def patbox-loc (graph-zipper my-map "patbox"))
 
 (loc-node (graph1-> patbox-loc
