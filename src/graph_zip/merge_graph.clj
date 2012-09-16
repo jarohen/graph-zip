@@ -16,21 +16,21 @@
 
 ;; TESTS -----------------------
 
-(def additional-map (build-in-memory-graph [{:subject "patbox" :property :instance :object "patbox/instance3"}
-                                            {:subject "patbox" :property "cmdb:hostname" :object "DBLONWS33999"}
-                                            {:subject "patbox/instance3" :property "label" :object "3"}]))
+(def additional-map (build-in-memory-graph [{:subject "prod-host" :property :instance :object "prod-host/instance3"}
+                                            {:subject "prod-host" :property "cmdb:hostname" :object "prod-server.example.com"}
+                                            {:subject "prod-host/instance3" :property "label" :object "3"}]))
 
-(def merged-loc (graph-zipper (MergeGraph. [my-map additional-map]) "patbox"))
+(def merged-zipper (graph-zipper (MergeGraph. [my-map additional-map]) "prod-host"))
 
-(loc-node (zip1-> merged-loc
-                  :instance
-                  (prop= "label" "3"))) ;; -> "patbox/instance3"
+(zipper-node (zip1-> merged-zipper
+                     :instance
+                     (prop= "label" "3"))) ;; -> "prod-host/instance3"
 
-(loc-node (zip1-> merged-loc
-                  :instance
-                  (prop= "label" "1"))) ;; -> "patbox/instance"
+(zipper-node (zip1-> merged-zipper
+                     :instance
+                     (prop= "label" "1"))) ;; -> "prod-host/instance"
 
-(map loc-node (zip-> merged-loc
-                     :instance)) ;; -> ("patbox/instance3" "patbox/instance2" "patbox/instance")
+(map zipper-node (zip-> merged-zipper
+                        :instance)) ;; -> ("prod-host/instance3" "prod-host/instance2" "prod-host/instance")
 
 

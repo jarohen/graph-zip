@@ -6,7 +6,6 @@
   (props-map [_ node])
   (prop-values [_ node prop]))
 
-
 (extend-protocol Graph
   nil
   (props-map [_ _] nil)
@@ -16,7 +15,7 @@
   (map #(hash-map :node % :graph graph) (mapcat val (props-map graph node))))
 
 (defn- graph-make-node [_ _ _]
-  ;; TODO It probably is possible
+  ;; TODO It might be possible
   
   ;; We can't modify a graph using zipper because zipper makes the assumption
   ;; that the parents of a node can't change when you modify a child node. Graphs
@@ -25,7 +24,7 @@
   ;; traversed back up the tree.
   (throw (RuntimeException. "Can't modify graph using zipper.")))
 
-;; graph-map :: ^Graph
+;; graph :: ^Graph
 (defn graph-zipper [graph root-node]
   (zip/zipper
    (constantly true) ;;graph-branch?
@@ -33,64 +32,62 @@
    graph-make-node
    {:node root-node :graph graph}))
 
-(defn loc-node [loc]
-  (if (nil? loc)
-    nil
-    (:node (zip/node loc))))
+(defn zipper-node [zipper]
+  (if-let [node (zip/node zipper)]
+    (:node node)))
 
-(defn loc-graph [loc]
-  (if (nil? loc)
-    nil
-    (:graph (zip/node loc))))
+(defn zipper-graph [zipper]
+  (if-let [node (zip/node zipper)]
+    (:graph node)))
 
-(defn props [loc]
-  (let [{:keys [node graph]} (zip/node loc)]
+(defn props [zipper]
+  (let [{:keys [node graph]} (zip/node zipper)]
     (props-map graph node)))
 
-(defn prop [loc prop-name]
-  (let [{:keys [node graph]} (zip/node loc)]
+(defn prop [zipper prop-name]
+  (let [{:keys [node graph]} (zip/node zipper)]
     (prop-values graph node prop-name)))
 
 (defn prop=
   [prop-name expected]
-  (fn [loc]
-    (let [{:keys [graph node]} (zip/node loc)]
+  (fn [zipper]
+    (let [{:keys [graph node]} (zip/node zipper)]
       (some #(= expected %) (prop-values graph node prop-name)))))
 
-(defn prop1 [loc prop-name]
-  (let [result (prop loc prop-name)]
+(defn prop1 [zipper prop-name]
+  (let [result (prop zipper prop-name)]
     (if (= 1 (count result))
       (first result)
       nil)))
 
 (defn go-to [node]
-  (fn [loc]
-    (vector (graph-zipper (loc-graph loc) node))))
+  (fn [zipper]
+    (vector (graph-zipper (zipper-graph zipper) node))))
 
-(defn navigate-relationship [loc rel]
-  (let [{:keys [node graph]} (zip/node loc)
+(defn navigate-relationship [zipper rel]
+  (let [{:keys [node graph]} (zip/node zipper)
         valid-child-nodes (prop-values graph node rel)
-        child-locs (zip-filter/children loc)
-        valid-child-locs (filter (fn [child-loc]
-                                   (let [child-node (loc-node child-loc)]
+        child-zippers (zip-filter/children zipper)
+        valid-child-zippers (filter (fn [child-zipper]
+                                   (let [child-node (zipper-node child-zipper)]
                                      (some #(= child-node %) valid-child-nodes)))
-                                 child-locs)]
-    valid-child-locs))
+                                 child-zippers)]
+    valid-child-zippers))
 
 (defn zip->
-  [loc & preds]
-  (zip-filter/mapcat-chain loc preds
+  [zipper & preds]
+  (zip-filter/mapcat-chain zipper preds
                    #(cond
                      (vector? %)
-                     (fn [loc] (and (seq (apply zip-> loc %)) (list loc)))
+                     (fn [zipper] (and (seq (apply zip-> zipper %)) (list zipper)))
 
                      (fn? %) nil
                      
                      :otherwise
-                     (fn [loc] (navigate-relationship loc %)))))
+                     (fn [zipper] (navigate-relationship zipper %)))))
 
 (defn zip1->
-  [loc & preds]
-  (let [result (apply zip-> loc preds)]
+  [zipper & preds]
+  (let [result (apply zip-> zipper preds)]
     (if (= (count result) 1)
       (first result))))

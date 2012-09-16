@@ -27,26 +27,26 @@
 
 ;; ----------- TESTS
 
-(def my-map (build-in-memory-graph [{:subject "patbox" :property :instance :object "patbox/instance"}
-                          {:subject "patbox" :property :instance :object "patbox/instance2"}
-                          {:subject "patbox/instance" :property :userid :object "mis"}
-                          {:subject "patbox/instance" :property "label" :object "1"}
-                          {:subject "patbox/instance2" :property "label" :object "2"}
-                          {:subject "patbox/instance" :property "cmdb:jvm" :object "patbox/instance/jvm"}
-                          {:subject "patbox/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
+(def my-map (build-in-memory-graph [{:subject "prod-host" :property :instance :object "prod-host/instance"}
+                                    {:subject "prod-host" :property :instance :object "prod-host/instance2"}
+                                    {:subject "prod-host/instance" :property :userid :object "my-user"}
+                                    {:subject "prod-host/instance" :property "label" :object "1"}
+                                    {:subject "prod-host/instance2" :property "label" :object "2"}
+                                    {:subject "prod-host/instance" :property "cmdb:jvm" :object "prod-host/instance/jvm"}
+                                    {:subject "prod-host/instance/jvm" :property "cmdb:maxMem" :object "1024m"}]))
 
-(def patbox-loc (graph-zipper my-map "patbox"))
+(def prod-host-zipper (graph-zipper my-map "prod-host"))
 
-(loc-node (zip1-> patbox-loc
-                  :instance
-                  [(prop= "label" "1")]
-                  "cmdb:jvm"
-                  "cmdb:maxMem")) ;; -> "1024m"
+(zipper-node (zip1-> prod-host-zipper
+                     :instance
+                     [(prop= "label" "1")]
+                     "cmdb:jvm"
+                     "cmdb:maxMem")) ;; -> "1024m"
 
-(loc-node (zip1-> patbox-loc
-                  :instance
-                  (prop= "label" "2"))) ;; -> "patbox/instance2"
+(zipper-node (zip1-> prod-host-zipper
+                     :instance
+                     (prop= "label" "2"))) ;; -> "prod-host/instance2"
 
-(map loc-node (zip-> patbox-loc
-                     :instance)) ;; -> ("patbox/instance2" "patbox/instance")
+(map zipper-node (zip-> prod-host-zipper
+                        :instance)) ;; -> ("prod-host/instance2" "prod-host/instance")
 
