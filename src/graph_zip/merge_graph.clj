@@ -22,15 +22,18 @@
 
 (def merged-zipper (graph-zip (MergeGraph. [my-map additional-map]) "prod-host"))
 
-(node (zip1-> merged-zipper
-              :instance
-              (prop= "label" "3"))) ;; -> "prod-host/instance3"
+(zip1-> merged-zipper
+        :instance
+        (prop= "label" "3")
+        node) ;; -> "prod-host/instance3"
 
-(node (zip1-> merged-zipper
-              :instance
-              (prop= "label" "1"))) ;; -> "prod-host/instance"
+(zip1-> merged-zipper
+        :instance
+        (prop= "label" "1")
+        node) ;; -> "prod-host/instance"
 
-(map node (zip-> merged-zipper
-                 :instance)) ;; -> ("prod-host/instance3" "prod-host/instance2" "prod-host/instance")
+(zip-> merged-zipper
+       :instance
+       node) ;; -> ("prod-host/instance3" "prod-host/instance2" "prod-host/instance")
 
 
