@@ -35,7 +35,7 @@ A zipper is a pair of the full graph, and the current node in the
 traversal. We can build a re-usable zipper, rooted at the "prod-host"
 node
 
-    (def prod-host-zipper (graph-zipper my-map "prod-host"))
+    (def prod-host-zipper (graph-zip my-map "prod-host"))
 
 This 'zips' along the ```:instance``` relation, and returns a list of
 zippers.
@@ -68,18 +68,15 @@ Relations don't have to be keywords
             "maxMem"
             node) ;; -> "1024m"
 
-Navigate an incoming relationship by using ```incoming```
-
-    (zip1-> (graph-zip my-map "prod-host/instance")
-            (incoming :instance)
-            node) ;; -> "prod-host"
-            
 Get the properties map of a node using ```props```
 
     (zip1-> prod-host-zipper
             :instance
             (prop= "label" "1")
-            props) ;; -> {"jvm" ("prod-host/instance/jvm"), "label" ("1"), :userid ("my-user")}
+            props) 
+            ;; -> {"jvm" ("prod-host/instance/jvm"), 
+                   "label" ("1"), 
+                   :userid ("my-user")}
 
 
 ### Merging graphs
@@ -97,22 +94,25 @@ two in-memory graphs:
        {:subject "prod-host/instance3" :property "label" :object "3"}]))   
                                                 
     (def merged-graph (make-merge-graph my-map additional-map))
-    (def merged-zipper (graph-zipper merged-graph "prod-host"))
+    (def merged-zipper (graph-zip merged-graph "prod-host"))
 
 The merge behaves as you'd expect:
 
-    (zipper-node (zip1-> merged-zipper
-                         :instance
-                         (prop= "label" "3"))) 
+    (zip1-> merged-zipper
+            :instance
+            (prop= "label" "3")
+            node) 
     ;; -> "prod-host/instance3"
 
-    (zipper-node (zip1-> merged-zipper
-                         :instance
-                         (prop= "label" "1"))) 
+    (zip1-> merged-zipper
+            :instance
+            (prop= "label" "1")
+            node) 
     ;; -> "prod-host/instance"
 
-    (map zipper-node (zip-> merged-zipper
-                            :instance)) 
+    (zip-> merged-zipper
+           :instance
+           node)
     ;; -> ("prod-host/instance3" 
            "prod-host/instance2"
            "prod-host/instance")
@@ -126,9 +126,9 @@ Find all the instances where the userid is ```my-user```:
 
 ```go-to``` moves the zipper to the given node.
 
-    (map zipper-node (zip-> merged-zipper
-                            (go-to "my-user")
-                            (incoming :userid))) 
+    (zip-> merged-zipper
+           (go-to "my-user")
+           (incoming :userid))) 
     ;; -> ("prod-host/instance3" 
            "prod-host/instance")
                             
