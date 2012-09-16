@@ -7,10 +7,12 @@
 (defrecord InMemoryGraph [graph]
     Graph
     (props-map [this node]
-      (get (:graph this) node))
+      (or (get (:graph this) node)
+          {}))
     (prop-values [this node prop]
       (let [props (props-map this node)]
-        (get props prop))))
+        (or (get props prop)
+            []))))
 
 (defn- add-statement-to-map [graph-map {:keys [subject property object]}]
   (assoc graph-map subject

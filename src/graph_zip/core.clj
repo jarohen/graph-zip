@@ -42,7 +42,8 @@
 
 (defn props [zipper]
   (let [{:keys [node graph]} (zip/node zipper)]
-    (props-map graph node)))
+    (or (props-map graph node)
+        {})))
 
 (defn prop [zipper prop-name]
   (let [{:keys [node graph]} (zip/node zipper)]
