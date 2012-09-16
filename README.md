@@ -23,6 +23,7 @@ You can use graph zip like this
                             :instance)) ;; -> ("prod-host/instance2" "prod-host/instance")
 
     ;; In a similar vein to xml-zip, you can prune the graph by using a 'prop=' predicate
+    ;; If you are only expecting one result, you can use the zip1-> function instead.
     (zipper-node (zip1-> prod-host-zipper
                          :instance
                          (prop= "label" "2"))) ;; -> "prod-host/instance2"
