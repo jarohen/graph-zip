@@ -20,17 +20,17 @@
                                             {:subject "prod-host" :property "cmdb:hostname" :object "prod-server.example.com"}
                                             {:subject "prod-host/instance3" :property "label" :object "3"}]))
 
-(def merged-zipper (graph-zipper (MergeGraph. [my-map additional-map]) "prod-host"))
+(def merged-zipper (graph-zip (MergeGraph. [my-map additional-map]) "prod-host"))
 
-(zipper-node (zip1-> merged-zipper
-                     :instance
-                     (prop= "label" "3"))) ;; -> "prod-host/instance3"
+(node (zip1-> merged-zipper
+              :instance
+              (prop= "label" "3"))) ;; -> "prod-host/instance3"
 
-(zipper-node (zip1-> merged-zipper
-                     :instance
-                     (prop= "label" "1"))) ;; -> "prod-host/instance"
+(node (zip1-> merged-zipper
+              :instance
+              (prop= "label" "1"))) ;; -> "prod-host/instance"
 
-(map zipper-node (zip-> merged-zipper
-                        :instance)) ;; -> ("prod-host/instance3" "prod-host/instance2" "prod-host/instance")
+(map node (zip-> merged-zipper
+                 :instance)) ;; -> ("prod-host/instance3" "prod-host/instance2" "prod-host/instance")
 
 

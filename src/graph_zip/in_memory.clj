@@ -1,18 +1,18 @@
 (ns graph-zip.in-memory
-   (:use [graph-zip.core])
-   (:require [clojure.zip :as zip]
-             [clojure.xml :as xml]
-             [clojure.data.zip :as zf]))
+  (:use [graph-zip.core])
+  (:require [clojure.zip :as zip]
+            [clojure.xml :as xml]
+            [clojure.data.zip :as zf]))
 
 (defrecord InMemoryGraph [graphs]
-    Graph
-    (props-map [this node direction]
-      (or (get-in this [:graphs direction node])
-          {}))
-    (prop-values [this node prop direction]
-      (let [props (props-map this node direction)]
-        (or (get props prop)
-            []))))
+  Graph
+  (props-map [this node direction]
+    (or (get-in this [:graphs direction node])
+        {}))
+  (prop-values [this node prop direction]
+    (let [props (props-map this node direction)]
+      (or (get props prop)
+          []))))
 
 (defn- add-statement-to-map [graph-map from property to]
   (assoc graph-map from
@@ -42,20 +42,28 @@
                                     {:subject "prod-host/instance" :property "jvm" :object "prod-host/instance/jvm"}
                                     {:subject "prod-host/instance/jvm" :property "maxMem" :object "1024m"}]))
 
-(def prod-host-zipper (graph-zipper my-map "prod-host"))
+(def prod-host-zipper (graph-zip my-map "prod-host"))
 
-(zipper-node (zip1-> prod-host-zipper
-                     :instance
-                     [(prop= "label" "1")]
-                     "jvm"
-                     "maxMem")) ;; -> "1024m"
+(zip1-> prod-host-zipper
+        :instance
+        [(prop= "label" "1")]
+        "jvm"
+        "maxMem"
+        zipper-node)
 
-(zipper-node (zip1-> prod-host-zipper
-                     :instance
-                     (prop= "label" "2"))) ;; -> "prod-host/instance2"
+(node (zip1-> prod-host-zipper
+              :instance
+              [(prop= "label" "1")]
+              "jvm"
+              "maxMem")) ;; -> "1024m"
 
-(map zipper-node (zip-> prod-host-zipper
-                        :instance)) ;; -> ("prod-host/instance2" "prod-host/instance")
+(node (zip1-> prod-host-zipper
+              :instance
+              (prop= "label" "2"))) ;; -> "prod-host/instance2"
+
+(zip-> prod-host-zipper
+       :instance
+       node) ;; -> ("prod-host/instance2" "prod-host/instance")
 
 (zipper-node (zip1-> (graph-zipper my-map "prod-host/instance")
                      (incoming :instance))) ;; -> "prod-host"

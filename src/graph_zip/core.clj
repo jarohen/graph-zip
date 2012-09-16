@@ -12,26 +12,26 @@
   (prop-values [_ _ _ _] nil))
 
 ;; graph :: ^Graph
-(defn graph-zipper [graph root-node]
+(defn graph-zip [graph root-node]
   {:graph graph :node root-node})
 
-(defn zipper-node [zipper]
-  (:node zipper))
+(defn node [loc]
+  (:node loc))
 
-(defn zipper-graph [zipper]
-  (:graph zipper))
+(defn graph [loc]
+  (:graph loc))
 
 (defn props
-  ([zipper] (props zipper :out))
-  ([zipper direction]
-     (let [{:keys [node graph]} zipper]
+  ([loc] (props loc :out))
+  ([loc direction]
+     (let [{:keys [node graph]} loc]
        (or (props-map graph node direction)
            {}))))
 
 (defn prop
-  ([zipper prop-name] (prop zipper prop-name :out))
-  ([zipper prop-name direction] 
-     (let [{:keys [node graph]} zipper]
+  ([loc prop-name] (prop loc prop-name :out))
+  ([loc prop-name direction] 
+     (let [{:keys [node graph]} loc]
        (prop-values graph node prop-name direction))))
 
 (defn prop-is
@@ -44,41 +44,41 @@
   ([prop-name expected direction] (prop-is prop-name (partial = expected))))
 
 (defn prop1
-  ([zipper prop-name] (prop1 zipper prop-name :out))
-  ([zipper prop-name direction]
-      (let [result (prop zipper prop-name direction)]
-        (if (= 1 (count result))
-          (first result)
-          nil))))
+  ([loc prop-name] (prop1 loc prop-name :out))
+  ([loc prop-name direction]
+     (let [result (prop loc prop-name direction)]
+       (if (= 1 (count result))
+         (first result)
+         nil))))
 
 (defn go-to [node]
-  (fn [zipper]
-    (graph-zipper (zipper-graph zipper) node)))
+  (fn [loc]
+    (graph-zip (graph loc) node)))
 
-(defn navigate-relationship [zipper rel direction]
-  (let [{:keys [node graph]} zipper
+(defn navigate-relationship [loc rel direction]
+  (let [{:keys [node graph]} loc
         valid-child-nodes (prop-values graph node rel direction)]
     (for [node valid-child-nodes]
-      (graph-zipper graph node))))
+      (graph-zip graph node))))
 
 (defn incoming [prop-name]
-  (fn [zipper]
-    (navigate-relationship zipper prop-name :in)))
+  (fn [loc]
+    (navigate-relationship loc prop-name :in)))
 
 (defn zip->
-  [zipper & preds]
-  (zip-filter/mapcat-chain zipper preds
+  [loc & preds]
+  (zip-filter/mapcat-chain loc preds
                            #(cond
                              (vector? %)
-                             (fn [zipper] (and (seq (apply zip-> zipper %)) (list zipper)))
+                             (fn [loc] (and (seq (apply zip-> loc %)) (list loc)))
                              
                              (fn? %) nil
                              
                              :otherwise
-                             (fn [zipper] (navigate-relationship zipper % :out)))))
+                             (fn [loc] (navigate-relationship loc % :out)))))
 
 (defn zip1->
-  [zipper & preds]
-  (let [result (apply zip-> zipper preds)]
+  [loc & preds]
+  (let [result (apply zip-> loc preds)]
     (if (= (count result) 1)
       (first result))))
