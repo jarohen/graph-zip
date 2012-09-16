@@ -5,7 +5,7 @@ structures, with a similar syntax to xml-zip.
 
 ## Lein dependency:
 
-    [graph-zip "0.3.1"]
+    [graph-zip "0.5"]
 
 ## Usage
 You can use graph zip like this:
