@@ -27,9 +27,10 @@
 
 (defn prop-is [prop-name pred]
   (fn [loc]
-    (some #(pred %)
-          (let [{:keys [node graph]} loc]
-            (prop-values graph node prop-name :out)))))
+    (when (some #(pred %)
+                (let [{:keys [node graph]} loc]
+                  (prop-values graph node prop-name :out)))
+      loc)))
 
 (defn prop= [prop-name expected]
   (prop-is prop-name (partial = expected)))
@@ -50,18 +51,19 @@
 
 (defn zip->
   [loc & preds]
-  (zip-filter/mapcat-chain loc preds
-                           #(cond
-                             (vector? %)
-                             (fn [loc] (and (seq (apply zip-> loc %)) (list loc)))
-                             
-                             (fn? %) nil
-                             
-                             :otherwise
-                             (fn [loc] (navigate-relationship loc % :out)))))
+  (when loc
+    (zip-filter/mapcat-chain loc preds
+                             #(cond
+                               (vector? %)
+                               (fn [loc] (and (seq (apply zip-> loc %)) (list loc)))
+                                       
+                               (fn? %) nil
+                                       
+                               :otherwise
+                               (fn [loc] (navigate-relationship loc % :out))))))
 
 (defn zip1->
   [loc & preds]
   (let [result (apply zip-> loc preds)]
-    (if (= (count result) 1)
+    (when (= (count result) 1)
       (first result))))
